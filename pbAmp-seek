@@ -98,7 +98,7 @@ def run(sub_args):
     # Step 0. Check for required dependencies
     # The pipelines has only two requirements:
     # snakemake and singularity 
-    require(['snakemake', 'singularity'], ['snakemake', 'singularity'])
+    require(['snakemake', 'singularity', 'conda', 'mamba'], ['snakemake', 'singularity', 'conda', 'mamba'])
 
     # Step 1. Initialize working directory,
     # copy over required resources to run 

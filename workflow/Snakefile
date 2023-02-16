@@ -89,7 +89,7 @@ rule pbaa:
       rname = "pbAA",
       tag = "{sample}"
     conda:
-        config['conda']['PacBioconda']
+        join(path_root,config['conda']['PacBioconda'])
     shell: """
         pbaa cluster -j 0 \
         --min-cluster-frequency 0.01 \
@@ -108,7 +108,7 @@ rule align_Consensus:
     log: 
         "logs/{sample}_pbmm2.cluster.log"
     conda:
-        config['conda']['PacBioconda']
+        join(path_root,config['conda']['PacBioconda'])
     params:
       rname = "align_Consensus",
       tag = "{sample}"
@@ -148,7 +148,7 @@ rule align_Hifi:
     log: 
         "logs/{sample}_pbmm2.hifi.log"
     conda:
-        config['conda']['PacBioconda']
+        join(path_root,config['conda']['PacBioconda'])
     params:
       rname = "align_Hifi",
       tag = "{sample}"

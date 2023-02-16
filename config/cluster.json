@@ -3,20 +3,17 @@
       "__default__": {
               "mem": "24g",
               "time": "10:00:00",
-              "partition": "norm",
               "threads": "2",
               "gres": "lscratch:500"
       },
       "pbaa": {
               "mem": "349g",
               "time": "24:00:00",
-              "partition": "norm",
-              "threads": "16",
+              "threads": "16"
       },
       "algn_Hifi": {
               "mem": "349g",
               "time": "24:00:00",
-              "partition": "norm",
-              "threads": "16",
+              "threads": "16"
       },
 }

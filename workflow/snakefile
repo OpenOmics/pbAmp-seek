@@ -1,0 +1,212 @@
+###########################################################################
+# PacBio amplicon analysis
+# Yue (Gary) Zhang, Ph.D
+# 2022/01/16
+# Snakemake/7.19.1
+
+# required input:
+# 1. all raw reads (must be .fastq files) should be put into a folder, the path to which should be listed as path raw reads in config.json
+# 2. the reference should be a fasta file; if there are multiple reference sequences, they should be concatenated into a single fasta file
+###########################################################################
+
+from snakemake.utils import R
+import glob
+import os
+from os import listdir
+from os.path import isfile, isdir, join
+import os.path as path
+import sys
+
+######################## load config file ######################
+configfile: "config.json"
+
+######################### paths #################################
+# set the paths
+path_root = config['paths']['root']
+path_raw_reads = config['paths']['raw_reads']
+ref_file = config['paths']['reference']
+
+
+# auto-populate the rest of paths
+path_analysis = path.join(path_root,"ANALYSIS")
+
+
+
+################### generate sample lists ###############################
+# create a list of raw fastq files 
+# DNA
+sample_list = [os.path.basename(file).split('.fastq')[0] for file in glob.glob(path_raw_reads+'/*.fastq')]
+print(sample_list)
+print(ref_file)
+
+########################### rules #################################
+rule target:
+    input:
+        # run step 1 index raw reads and reference
+        expand("{path}/{sample}.fastq.fai", path=path_raw_reads, sample=sample_list),
+        # run step 2 pbAA clustering
+        expand("{path}/{sample}_passed_cluster_sequences.fasta", path=path_analysis, sample=sample_list),
+        # run step 3 pbmm2 align consensus sequence to reference
+        expand("{path}/{sample}_consensus_reference_alignment.bam", path=path_analysis, sample=sample_list),
+        # run step 4 variant calling
+        expand("{path}/{sample}_consensus_reference_alignment.bam.pileup", path=path_analysis, sample=sample_list),
+        expand("{path}/{sample}_consensus_reference_alignment.bcf", path=path_analysis, sample=sample_list),
+        expand("{path}/{sample}_consensus_reference_alignment.vcf", path=path_analysis, sample=sample_list),
+        # run step 5 pbmm2 align hifi reads to consensus
+        expand("{path}/{sample}_hifi_consensus_alignment.bam", path=path_analysis, sample=sample_list),
+        # run step 6 summary statistics 
+        expand("{path}/{sample}_allstat.txt",path=path_analysis,sample=sample_list),
+        expand("{path}/{sample}_consensus_reference_alignment.bed",path=path_analysis,sample=sample_list),
+        # run step 7 summarize
+        expand("{path}/{sample}_summary.csv",path=path_analysis,sample=sample_list)
+
+########################## steps #######################################
+# 1. decompress DNA data and index 
+rule index:
+    input:
+        path.join(path_raw_reads,"{sample}.fastq")
+    output:
+        path.join(path_raw_reads,"{sample}.fastq.fai"),
+    envmodules:
+        "samtools/1.16.1"
+    params:
+      rname = "index",
+      tag = "{sample}"
+    shell: """
+        samtools fqidx {input} -o {output};
+        samtools faidx {ref_file}
+    """
+
+# 2. cluster with pbAA
+rule pbaa:
+    input:
+        hifi = path.join(path_raw_reads,"{sample}.fastq"),
+        index = path.join(path_raw_reads,"{sample}.fastq.fai")
+    output:
+        path.join(path_analysis,"{sample}_passed_cluster_sequences.fasta")
+    log: 
+        "logs/{sample}_pbaa.cluster.log"
+    params:
+      rname = "pbAA",
+      tag = "{sample}"
+    conda:
+        "PacBioconda"
+    shell: """
+        pbaa cluster -j 0 \
+        --min-cluster-frequency 0.01 \
+        --log-file {log} --log-level INFO \
+        {ref_file} \
+        {input.hifi} \
+        {path_analysis}/{wildcards.sample}
+    """
+
+# 3. align cluster reads to reference
+rule align_Consensus:
+    input:
+        path.join(path_analysis,"{sample}_passed_cluster_sequences.fasta")
+    output:
+        path.join(path_analysis,"{sample}_consensus_reference_alignment.bam")
+    log: 
+        "logs/{sample}_pbmm2.cluster.log"
+    conda:
+        "PacBioconda"
+    params:
+      rname = "align_Consensus",
+      tag = "{sample}"
+    shell: """
+        pbmm2 align -j 0 --preset hifi --sort \
+        {ref_file} {input} {output} > {log} 2>&1
+    """
+
+# 4. variant calling
+rule variant_calling:
+    input:
+        path.join(path_analysis,"{sample}_consensus_reference_alignment.bam")
+    output:
+        pileup = path.join(path_analysis,"{sample}_consensus_reference_alignment.bam.pileup"),
+        bcf = path.join(path_analysis,"{sample}_consensus_reference_alignment.bcf"),
+        vcf = path.join(path_analysis,"{sample}_consensus_reference_alignment.vcf")
+    log:
+        "logs/{sample}_variant_calling.cluster.log"
+    envmodules:
+        "samtools/1.16.1"
+    params:
+      rname = "variant_calling",
+      tag = "{sample}"
+    shell: """
+        samtools mpileup -s -f {ref_file} {input} -o {output.pileup};
+        bcftools mpileup -Ob -o {output.bcf} -f {ref_file} {input};
+        bcftools call -vmO v -o {output.vcf} {output.bcf}
+    """
+
+# 5. mapping hifi reads back to consensus sequences
+rule align_Hifi:
+    input:
+        hifi = path.join(path_raw_reads,"{sample}.fastq"),
+        cluster = path.join(path_analysis,"{sample}_passed_cluster_sequences.fasta")
+    output:
+        path.join(path_analysis,"{sample}_hifi_consensus_alignment.bam")
+    log: 
+        "logs/{sample}_pbmm2.hifi.log"
+    conda:
+        "PacBioconda"
+    params:
+      rname = "align_Hifi",
+      tag = "{sample}"
+    shell: """
+        pbmm2 align -j 0 --preset hifi --sort \
+        {input.cluster} {input.hifi} {output} > {log} 2>&1
+    """
+
+# 6. summary statistics of the hifi-consensus alignment results
+rule count_reads:
+    input:
+        bam = path.join(path_analysis,"{sample}_hifi_consensus_alignment.bam"),
+        hifi = path.join(path_raw_reads,"{sample}.fastq"),
+        bam2 = path.join(path_analysis,"{sample}_consensus_reference_alignment.bam")
+    output:
+        primary_bam = path.join(path_analysis,"{sample}_hifi_consensus_alignment_primary_alignment_only.bam"), 
+        flagstat = path.join(path_analysis,"{sample}_flagstat.txt"),
+        idxstat = path.join(path_analysis,"{sample}_idxstat.txt"),
+        hifistat = path.join(path_analysis,"{sample}_hifistat.txt"),
+        allstat = path.join(path_analysis,"{sample}_allstat.txt"),
+        bed = path.join(path_analysis,"{sample}_consensus_reference_alignment.bed")
+    envmodules:
+        "samtools/1.16.1",
+        "bedtools/2.30.0",
+        "seqkit/2.1.0"
+    params:
+        rname = "count_read",
+        tag = "{sample}"
+    shell: """
+        seqkit stats -T {input.hifi} > {output.hifistat};
+        samtools view -b -F 0x800 -F 0x100 {input.bam} > {output.primary_bam};
+        samtools flagstat {output.primary_bam} > {output.flagstat};
+        samtools idxstat {output.primary_bam} > {output.idxstat};
+        cat {output.hifistat} {output.flagstat} {output.idxstat} > {output.allstat};
+        bedtools bamtobed -i {input.bam2} > {output.bed}
+    """
+
+# 7. summarize results
+rule summarize:
+    input:
+        idxstat = path.join(path_analysis,"{sample}_idxstat.txt"),
+        hifistat = path.join(path_analysis,"{sample}_hifistat.txt"),
+        bed = path.join(path_analysis,"{sample}_consensus_reference_alignment.bed")
+    output:
+        path.join(path_analysis,"{sample}_summary.csv")
+    log:
+        "logs/{sample}_summary.log"
+    envmodules:
+        "R/4.2.2"
+    params:
+        rname = "summarize",
+        tag = "{sample}"
+    shell: """
+        Rscript scripts/summary.R {input.idxstat} {input.hifistat} {input.bed} {output} \
+        > {log} 2>&1
+    """
+
+
+
+

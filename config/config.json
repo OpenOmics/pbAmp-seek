@@ -1,4 +1,7 @@
 {
-    "options": {
-    }
+  "paths": {
+    "root": "/data/NCBR/projects/NCBR-331/snakemake-build",
+    "raw_reads": "/data/NCBR/projects/NCBR-331/snakemake-build/raw_data",
+    "reference": "/data/NCBR/projects/NCBR-331/20230112/reference/concat_reference.fasta"
+  }
 }

@@ -1,0 +1,7 @@
+{
+    "conda": {
+        "PacBioconda": "workflow/envs/PacBioconda.yml"
+    },
+    "tools": {
+    }
+}

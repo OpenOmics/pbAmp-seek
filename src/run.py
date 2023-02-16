@@ -112,20 +112,20 @@ def rename(filename):
     # Covers common extensions from SF, SRA, EBI, TCGA, and external sequencing providers
     # key = regex to match string and value = how it will be renamed
     extensions = {
-        # Matches: _R[12]_fastq.gz, _R[12].fastq.gz, _R[12]_fq.gz, etc.
-        ".R1.f(ast)?q.gz$": ".R1.fastq.gz",
-        ".R2.f(ast)?q.gz$": ".R2.fastq.gz",
-        # Matches: _R[12]_001_fastq_gz, _R[12].001.fastq.gz, _R[12]_001.fq.gz, etc.
-        # Capture lane information as named group
-        ".R1.(?P<lane>...).f(ast)?q.gz$": ".R1.fastq.gz",
-        ".R2.(?P<lane>...).f(ast)?q.gz$": ".R2.fastq.gz",
-        # Matches: _[12].fastq.gz, _[12].fq.gz, _[12]_fastq_gz, etc.
-        "_1.f(ast)?q.gz$": ".R1.fastq.gz",
-        "_2.f(ast)?q.gz$": ".R2.fastq.gz"
+        # Matches: _fastq, .fastq, .fq, etc.
+        ".f(ast)?q$": ".fastq"
     }
 
-    if (filename.endswith('.R1.fastq.gz') or
-        filename.endswith('.R2.fastq.gz')):
+    # TODO: update pipeline to support gzipped inputs,
+    # once added remove this check
+    if (filename.endswith('.fastq.gz')):
+        raise NameError(
+            """\n\tFatal: Invalid --input '{}' detected!
+            Pipeline does not support gzipped FastQ files as input. 
+            """.format(filename)
+        )
+
+    if (filename.endswith('.fastq')):
         # Filename is already in the correct format
         return filename
 
@@ -143,11 +143,7 @@ def rename(filename):
         Cannot determine the extension of the user provided input file.
         Please rename the file list above before trying again.
         Here is example of acceptable input file extensions:
-          sampleName.R1.fastq.gz      sampleName.R2.fastq.gz
-          sampleName_R1_001.fastq.gz  sampleName_R2_001.fastq.gz
-          sampleName_1.fastq.gz       sampleName_2.fastq.gz
-        Please also check that your input files are gzipped?
-        If they are not, please gzip them before proceeding again.
+          sampleName.fastq      sampleName.fq
         """.format(filename, sys.argv[0])
         )
 
@@ -362,7 +358,7 @@ def mixed_inputs(ifiles):
     fastqs = False
     bams = False
     for file in ifiles:
-        if file.endswith('.R1.fastq.gz') or file.endswith('.R2.fastq.gz'):
+        if file.endswith('.fastq') or file.endswith('.fastq.gz'):
             fastqs = True 
             fq_files.append(file)
         elif file.endswith('.bam'):
@@ -431,7 +427,7 @@ def add_sample_metadata(input_files, config, group=None):
     config['samples'] = []
     for file in input_files:
         # Split sample name on file extension
-        sample = re.split('\.R[12]\.fastq\.gz', os.path.basename(file))[0]
+        sample = re.split('\.fastq', os.path.basename(file))[0]
         if sample not in added:
             # Only add PE sample information once
             added.append(sample)
@@ -459,10 +455,10 @@ def add_rawdata_information(sub_args, config, ifiles):
     # or single-end
     # Updates config['project']['nends'] where
     # 1 = single-end, 2 = paired-end, -1 = bams
-    convert = {1: 'single-end', 2: 'paired-end', -1: 'bam'}
-    nends = get_nends(ifiles)  # Checks PE data for both mates (R1 and R2)
-    config['project']['nends'] = nends
-    config['project']['filetype'] = convert[nends]
+    # convert = {1: 'single-end', 2: 'paired-end', -1: 'bam'}
+    # nends = get_nends(ifiles)  # Checks PE data for both mates (R1 and R2)
+    # config['project']['nends'] = nends
+    # config['project']['filetype'] = convert[nends]
 
     # Finds the set of rawdata directories to bind
     rawdata_paths = get_rawdata_bind_paths(input_files = sub_args.input)

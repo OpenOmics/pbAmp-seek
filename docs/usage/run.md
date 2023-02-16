@@ -5,7 +5,7 @@ The `pbAmp-seek` executable is composed of several inter-related sub commands. P
 
 This part of the documentation describes options and concepts for <code>pbAmp-seek <b>run</b></code> sub command in more detail. With minimal configuration, the **`run`** sub command enables you to start running pbAmp-seek pipeline. 
 
-Setting up the pbAmp-seek pipeline is fast and easy! In its most basic form, <code>pbAmp-seek <b>run</b></code> only has *two required inputs*.
+Setting up the pbAmp-seek pipeline is fast and easy! In its most basic form, <code>pbAmp-seek <b>run</b></code> only has *three required inputs*.
 
 ## 2. Synopsis
 ```text
@@ -15,12 +15,13 @@ $ pbAmp-seek run [--help] \
       [--singularity-cache SINGULARITY_CACHE] \
       [--dry-run] [--threads THREADS] \
       --input INPUT [INPUT ...] \
-      --output OUTPUT
+      --output OUTPUT \
+      --ref-fasta REF_FASTA
 ```
 
 The synopsis for each command shows its arguments and their usage. Optional arguments are shown in square brackets.
 
-A user **must** provide a list of FastQ (globbing is supported) to analyze via `--input` argument and an output directory to store results via `--output` argument.
+A user **must** provide a list of FastQ (globbing is supported) to analyze via `--input` argument, an output directory to store results via `--output` argument, and a amplicon reference FASTA file for pbAA clustering.
 
 Use you can always use the `-h` option for information on a specific command. 
 
@@ -29,12 +30,12 @@ Use you can always use the `-h` option for information on a specific command.
 Each of the following arguments are required. Failure to provide a required argument will result in a non-zero exit-code.
 
   `--input INPUT [INPUT ...]`  
-> **Input FastQ or BAM file(s).**  
+> **Input FastQ.**  
 > *type: file(s)*  
 > 
-> One or more FastQ files can be provided. The pipeline does NOT support single-end data. From the command-line, each input file should seperated by a space. Globbing is supported! This makes selecting FastQ files easy. Input FastQ files should always be gzipp-ed.
+> One or more PacBio FastQ files can be provided. From the command-line, each input file should seperated by a space. Globbing is supported! This makes selecting FastQ files easy.
 > 
-> ***Example:*** `--input .tests/*.R?.fastq.gz`
+> ***Example:*** `--input .tests/*.fastq`
 
 ---  
   `--output OUTPUT`
@@ -44,6 +45,15 @@ Each of the following arguments are required. Failure to provide a required argu
 > This location is where the pipeline will create all of its output files, also known as the pipeline's working directory. If the provided output directory does not exist, it will be created automatically.
 > 
 > ***Example:*** `--output /data/$USER/pbAmp-seek_out`
+
+  `--ref-fastq REF_FASTA`  
+> **Input Amplicon reference FASTA file.**  
+> *type: FASTA file*  
+> 
+> Amplicon FASTA file. This reference file is used for pbAA clustering.
+> 
+> ***Example:*** `--input .tests/amplicon.fa`
+
 
 ### 2.2 Analysis options
 
@@ -156,18 +166,21 @@ Each of the following arguments are optional, and do not need to be provided.
 srun -N 1 -n 1 --time=1:00:00 --mem=8gb  --cpus-per-task=2 --pty bash
 module purge
 module load singularity snakemake
+which conda || echo 'Error: conda is not installed!'
 
 # Step 2A.) Dry-run the pipeline
-./pbAmp-seek run --input .tests/*.R?.fastq.gz \
+./pbAmp-seek run --input .tests/*.fastq \
                   --output /data/$USER/output \
                   --mode slurm \
+                  --ref-fasta /data/$USER/amplicon.fa \
                   --dry-run
 
 # Step 2B.) Run the pbAmp-seek pipeline
 # The slurm mode will submit jobs to 
 # the cluster. It is recommended running 
 # the pipeline in this mode.
-./pbAmp-seek run --input .tests/*.R?.fastq.gz \
+./pbAmp-seek run --input .tests/*.fastq \
                   --output /data/$USER/output \
-                  --mode slurm
+                  --mode slurm \
+                  --ref-fasta /data/$USER/amplicon.fa
 ```

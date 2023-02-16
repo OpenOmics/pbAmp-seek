@@ -22,10 +22,9 @@ configfile: "config.json"
 
 ######################### paths #################################
 # set the paths
-path_root = config['paths']['root']
-path_raw_reads = config['paths']['raw_reads']
-ref_file = config['paths']['reference']
-
+path_root = config['options']['output']          # Output or pipeline working directory
+path_raw_reads = config['project']['datapath']  # Rawdata directory
+ref_file = config['options']['ref_fasta']        # Amplicon FASTA file for pbAA clustering          
 
 # auto-populate the rest of paths
 path_analysis = path.join(path_root,"ANALYSIS")
@@ -35,7 +34,7 @@ path_analysis = path.join(path_root,"ANALYSIS")
 ################### generate sample lists ###############################
 # create a list of raw fastq files 
 # DNA
-sample_list = [os.path.basename(file).split('.fastq')[0] for file in glob.glob(path_raw_reads+'/*.fastq')]
+sample_list = config['samples']                  # Basenames of the input samples
 print(sample_list)
 print(ref_file)
 
@@ -90,7 +89,7 @@ rule pbaa:
       rname = "pbAA",
       tag = "{sample}"
     conda:
-        "PacBioconda"
+        config['conda']['PacBioconda']
     shell: """
         pbaa cluster -j 0 \
         --min-cluster-frequency 0.01 \
@@ -109,7 +108,7 @@ rule align_Consensus:
     log: 
         "logs/{sample}_pbmm2.cluster.log"
     conda:
-        "PacBioconda"
+        config['conda']['PacBioconda']
     params:
       rname = "align_Consensus",
       tag = "{sample}"
@@ -149,7 +148,7 @@ rule align_Hifi:
     log: 
         "logs/{sample}_pbmm2.hifi.log"
     conda:
-        "PacBioconda"
+        config['conda']['PacBioconda']
     params:
       rname = "align_Hifi",
       tag = "{sample}"

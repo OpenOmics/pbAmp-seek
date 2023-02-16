@@ -1,0 +1,15 @@
+name: PacBioconda
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - bam2fastx
+  - bax2bam
+  - pb-falcon
+  - pb-dazzler
+  - pb-assembly
+  - lima
+  - isoseq3
+  - pbccs
+  - pbaa

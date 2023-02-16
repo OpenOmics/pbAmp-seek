@@ -200,9 +200,10 @@ rule summarize:
         "R/4.2.2"
     params:
         rname = "summarize",
-        tag = "{sample}"
+        tag = "{sample}",
+        rscript = join(path_root,"workflow/scripts/summary.R")
     shell: """
-        Rscript scripts/summary.R {input.idxstat} {input.hifistat} {input.bed} {output} \
+        Rscript {params.rscript} {input.idxstat} {input.hifistat} {input.bed} {output} \
         > {log} 2>&1
     """
 

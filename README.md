@@ -44,6 +44,8 @@ cd pbAmp-seek/
 # Biowulf users should run
 module load snakemake singularity
 which conda || echo 'Error: conda not installed!'
+which mamba || echo 'Error: mamba not installed!'
+# note that 
 # Get usage information
 ./pbAmp-seek -h
 ```

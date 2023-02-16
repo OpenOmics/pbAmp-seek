@@ -5,7 +5,7 @@ The `pbAmp-seek` executable is composed of several inter-related sub commands. P
 
 This part of the documentation describes options and concepts for <code>pbAmp-seek <b>run</b></code> sub command in more detail. With minimal configuration, the **`run`** sub command enables you to start running pbAmp-seek pipeline. 
 
-Setting up the pbAmp-seek pipeline is fast and easy! In its most basic form, <code>pbAmp-seek <b>run</b></code> only has *three required inputs*. In the pipeline, the hifi reads will be clustered to find consensus sequences (amplicon sequences) with pbAA (https://github.com/PacificBiosciences/pbAA) using the provided reference sequences as guides. The consensus sequences will then be aligned to the reference for comparison. The hifi reads will also be aligned to the consensus sequences to quantify their relative proportion in the pool. Alignment is performed with pbmm2 (https://github.com/PacificBiosciences/pbmm2). In the end, a summary file ({sample}_summary.csv) will be generated to report what consensus sequences were found, where they aligned to the reference, and how many reads were mapped to them (in both absolute and proportional values). Detailed reference-consensus alignment information is also provided in bam, mpileup, and vcf files.
+Setting up the pbAmp-seek pipeline is fast and easy! In its most basic form, <code>pbAmp-seek <b>run</b></code> only has *three required inputs*. 
 
 ## 2. Synopsis
 ```text

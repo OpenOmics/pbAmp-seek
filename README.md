@@ -35,12 +35,15 @@ At the current moment, the pipeline uses a mixture of enviroment modules, conda 
 
 ## Installation
 This pipeline requires conda and mamba to be installed and exist in your path variables. Instruction to install conda and memba is provided below:
+
 **download** 
 
 wget https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-Linux-x86_64.sh
+
 **install**
 
 bash Mambaforge-Linux-x86_64.sh -p /data/$USER/conda -b
+
 **source**
 
 source /data/$USER/conda/etc/profile.d/conda.sh && source /data/$USER/conda/etc/profile.d/mamba.sh

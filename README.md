@@ -34,6 +34,14 @@ For more information about issues or trouble-shooting a problem, please checkout
 At the current moment, the pipeline uses a mixture of enviroment modules, conda environments, and docker images; however, this will be changing soon! In the very near future, the pipeline will only use docker images. With that being said, [snakemake](https://snakemake.readthedocs.io/en/stable/getting_started/installation.html) and [singularity](https://singularity.lbl.gov/all-releases) must be installed on the target system. Snakemake orchestrates the execution of each step in the pipeline. To guarantee the highest level of reproducibility, each step of the pipeline will rely on versioned images from [DockerHub](https://hub.docker.com/orgs/nciccbr/repositories). Snakemake uses singularity to pull these images onto the local filesystem prior to job execution, and as so, snakemake and singularity will be the only two dependencies in the future. Conda can be installed following [these](https://conda.io/projects/conda/en/latest/user-guide/install/index.html#) instructions. 
 
 ## Installation
+This pipeline requires conda and mamba to be installed and exist in your path variables. Instruction to install conda and memba is provided below:
+# download 
+wget https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-Linux-x86_64.sh
+# install
+bash Mambaforge-Linux-x86_64.sh -p /data/$USER/conda -b
+# source 
+source /data/$USER/conda/etc/profile.d/conda.sh && source /data/$USER/conda/etc/profile.d/mamba.sh
+
 Please clone this repository to your local filesystem using the following command:
 ```bash
 # Clone Repository from Github
@@ -45,6 +53,9 @@ cd pbAmp-seek/
 module load snakemake singularity
 which conda || echo 'Error: conda not installed!'
 which mamba || echo 'Error: mamba not installed!'
+# If the errors above occurred, please source the conda & mamba init file:
+source /data/$USER/conda/etc/profile.d/conda.sh && source /data/$USER/conda/etc/profile.d/mamba.sh
+
 # note that 
 # Get usage information
 ./pbAmp-seek -h
